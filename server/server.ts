@@ -32,20 +32,20 @@ const shellEscapeArg = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
 
 const truthyValues = new Set(['1', 'true', 'on', 'yes']);
 
-const isTruthy = (value: unknown) => {
+const isTruthy = (value: unknown): boolean => {
   if (typeof value === 'string') return truthyValues.has(value.toLowerCase());
   if (Array.isArray(value)) return value.some((item) => isTruthy(item));
   return false;
 };
 
-const shouldIncludeDebugResponse = (req: Request) => {
+const shouldIncludeDebugResponse = (req: Request): boolean => {
   const headerValue = req.header('x-dockernet-debug');
   const queryValue = req.query.debug;
 
   return isTruthy(headerValue) || isTruthy(queryValue);
 };
 
-const getErrorMessage = (message: unknown) => {
+const getErrorMessage = (message: unknown): string => {
   if (typeof message === 'string') return message;
   if (message instanceof Error) return message.message;
 
