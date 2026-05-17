@@ -1,6 +1,9 @@
 const path = require('path');
 require('dotenv').config();
 
+const frontendPort = process.env.FRONTEND_PORT || 8081;
+const serverPort = process.env.SERVER_PORT || 3031;
+
 module.exports = {
   mode: process.env.NODE_ENV,
   entry: {
@@ -21,10 +24,10 @@ module.exports = {
       publicPath: '/',
       directory: path.resolve(__dirname, 'build'),
     },
-    port: process.env.FRONTEND_PORT,
+    port: frontendPort,
     proxy: {
-      '/networks': `http://localhost:${process.env.SERVER_PORT}/`,
-      '/api': `http://localhost:${process.env.SERVER_PORT}/`,
+      '/networks': `http://localhost:${serverPort}/`,
+      '/api': `http://localhost:${serverPort}/`,
     },
   },
 

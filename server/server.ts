@@ -11,6 +11,8 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const serverPort = process.env.SERVER_PORT || 3031;
+
 const app: Application = express();
 
 app.use(express.json());
@@ -51,6 +53,6 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
 app.use(errorHandler);
 
-app.listen(process.env.SERVER_PORT, () => {
-  console.log(`Server running on port ${process.env.SERVER_PORT}`);
+app.listen(serverPort, () => {
+  console.log(`Server running on port ${serverPort}`);
 });
