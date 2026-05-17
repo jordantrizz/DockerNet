@@ -8,7 +8,9 @@ type RawContainers = {
   };
 };
 
-export const formatRawContainers = (rawContainers: RawContainers) => {
+export const formatRawContainers = (rawContainers: RawContainers | null) => {
+  if (!rawContainers) return [];
+
   return Object.keys(rawContainers).map((containerId) => {
     return {
       id: containerId.slice(0, 12),

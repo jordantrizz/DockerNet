@@ -18,7 +18,8 @@ const dockerApiFallbackMode =
   process.env.DOCKER_API_FALLBACK_MODE || DEFAULT_DOCKER_API_FALLBACK_MODE;
 const dockerApiVersionOverride = process.env.DOCKER_API_VERSION || '';
 
-const sanitizeApiVersion = (version: string) => version.trim().replace(/^v/i, '');
+const sanitizeApiVersion = (version: string) =>
+  version.trim().replace(/^v/i, '');
 
 const isCliConnectionMode = () => dockerConnectionMode.toLowerCase() === 'cli';
 const shouldFallbackToCli = () => dockerApiFallbackMode.toLowerCase() === 'cli';
@@ -53,7 +54,9 @@ const getDockerApiVersion = async () => {
   }
 
   const versionResponse = parseDockerJson(stdout, 'getDockerApiVersion');
-  const detectedApiVersion = sanitizeApiVersion(versionResponse.ApiVersion || '');
+  const detectedApiVersion = sanitizeApiVersion(
+    versionResponse.ApiVersion || ''
+  );
 
   if (!detectedApiVersion) {
     throw new Error('Docker API version could not be detected from /version');
@@ -113,6 +116,14 @@ const networksController = (() => {
           rawNetworksAndContainers = await getNetworksWithApi();
         } catch (error) {
           if (shouldFallbackToCli()) {
+            console.warn(
+              '[DockerNet][networks] API mode failed, falling back to CLI',
+              {
+                mode: dockerConnectionMode,
+                socket: dockerSocketPath,
+                error: getErrorMessage(error),
+              }
+            );
             rawNetworksAndContainers = await getNetworksWithCli();
           } else {
             throw error;
@@ -127,9 +138,17 @@ const networksController = (() => {
       res.locals.networksAndContainers = networksAndContainers;
       return next();
     } catch (error) {
+      const message = getErrorMessage(error);
+      console.error('[DockerNet][networks] request failed', {
+        mode: dockerConnectionMode,
+        socket: dockerSocketPath,
+        fallbackMode: dockerApiFallbackMode,
+        error: message,
+      });
+
       return next({
         log: `Docker connection failed in getNetworksAndContainers (mode=${dockerConnectionMode}, socket=${dockerSocketPath})`,
-        message: getErrorMessage(error),
+        message,
       });
     }
   };

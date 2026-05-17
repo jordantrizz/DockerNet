@@ -3,7 +3,7 @@ import { formatRawContainers } from './formatRawContainers';
 type network = {
   Name: string;
   Driver: string;
-  Containers: RawContainers;
+  Containers: RawContainers | null;
 };
 
 type RawContainers = {

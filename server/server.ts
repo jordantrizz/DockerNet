@@ -17,6 +17,20 @@ const app: Application = express();
 
 app.use(express.json());
 
+app.use('/api', (req: Request, res: Response, next) => {
+  const startedAt = Date.now();
+
+  res.on('finish', () => {
+    const elapsedMs = Date.now() - startedAt;
+    const logLine = `[DockerNet][api] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${elapsedMs}ms)`;
+
+    if (res.statusCode >= 400) console.error(logLine);
+    else console.log(logLine);
+  });
+
+  next();
+});
+
 app.use('/build', express.static(path.join(__dirname, '../build')));
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 
@@ -48,6 +62,14 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     log: err.log,
     message: { err: err.message },
   };
+
+  console.error('[DockerNet][error]', {
+    method: req.method,
+    path: req.originalUrl,
+    log: errorObj.log,
+    message: errorObj.message.err,
+  });
+
   return res.status(errorObj.status).json(errorObj.message);
 };
 
