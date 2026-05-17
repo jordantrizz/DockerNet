@@ -135,6 +135,52 @@
 >  - If your environment does not expose a socket path, set `DOCKER_CONNECTION_MODE=cli`.
 >- API mode still failing on socket/path issues:
 >  - Set `DOCKER_API_FALLBACK_MODE=cli` to retry network discovery through Docker CLI automatically.
+>
+>### Startup Health Check Logs
+>On server boot, DockerNet emits a one-time startup health log. Use it to diagnose Docker connectivity without calling API endpoints manually.
+>
+>API mode success example:
+>```text
+>[DockerNet][startup] Docker health check OK {
+>  mode: 'api',
+>  socket: '/var/run/docker.sock',
+>  fallbackMode: 'none',
+>  apiVersion: '1.54',
+>  minApiVersion: '1.40',
+>  engineVersion: '29.3.0'
+>}
+>```
+>
+>CLI mode success example:
+>```text
+>[DockerNet][startup] Docker health check OK {
+>  mode: 'cli',
+>  fallbackMode: 'none',
+>  serverApiVersion: '1.54'
+>}
+>```
+>
+>Startup failure example:
+>```text
+>[DockerNet][startup] Docker health check FAILED {
+>  mode: 'api',
+>  socket: '/var/run/docker.sock',
+>  fallbackMode: 'none',
+>  apiVersionOverride: '(auto)',
+>  error: 'permission denied'
+>}
+>```
+>
+>How to interpret startup logs:
+>- `OK` with `mode: 'api'`: Docker socket and API negotiation are healthy.
+>- `OK` with `mode: 'cli'`: Docker CLI path is healthy (socket path may not be used).
+>- `FAILED`: Startup connectivity check failed. Use the `error` field and apply the matching fix below.
+>
+>Quick remediation by failure signature:
+>- Daemon not running (`Cannot connect to the Docker daemon`): start Docker daemon/service on the server host.
+>- Socket path missing (`No such file or directory`): set `DOCKER_SOCKET_PATH` to the correct Unix socket path.
+>- Socket permission denied (`permission denied`): grant the server user access to Docker socket (for example docker group membership on Linux).
+>- API override mismatch (`unsupported` or version mismatch): clear `DOCKER_API_VERSION` to use auto-detection or set a supported value.
 >### Demo
 >Create Network
 > <p align="center"><img alt="create-network" src="./assets/create-network.gif"></p>
