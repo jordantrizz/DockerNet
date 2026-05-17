@@ -24,6 +24,8 @@ module.exports = {
       publicPath: '/',
       directory: path.resolve(__dirname, 'build'),
     },
+    host: '0.0.0.0',
+    allowedHosts: 'all',
     port: frontendPort,
     proxy: {
       '/networks': `http://localhost:${serverPort}/`,
