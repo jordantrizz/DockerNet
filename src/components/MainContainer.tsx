@@ -8,6 +8,8 @@ import { Header } from './Header';
 import { DeleteNetworkModal } from './DeleteNetworkModal';
 import { ErrorModal } from './ErrorModal';
 import { DockerUnresponsive } from './DockerUnresponsive';
+import { DebugErrorDetails, debugLog, isDebugModeEnabled } from '../utils/debugMode';
+import { fetchJsonWithDebug, getDebugErrorDetails } from '../utils/fetchWithDebug';
 
 // array of network objects
 interface IState {
@@ -27,6 +29,9 @@ export const MainContainer = () => {
 
   // For toggling of modal containing all error messages when docker is responsive
   const [errorModalDisplay, setErrorModalDisplay] = useState<string>('');
+  const [errorDebugDetails, setErrorDebugDetails] = useState<
+    DebugErrorDetails | undefined
+  >(undefined);
 
   // For toggling modal handling error messages when docker is unresponsive
   const [dockerUnresponsiveModalDisplay, setDockerUnresponsiveModalDisplay] =
@@ -39,6 +44,19 @@ export const MainContainer = () => {
 
   const toggleSideNav = () => {
     setSideNavDisplay(!sideNavDisplay);
+  };
+
+  const showErrorModal = (
+    errorKey: string,
+    debugDetails?: DebugErrorDetails
+  ) => {
+    setErrorModalDisplay(errorKey);
+    setErrorDebugDetails(debugDetails);
+  };
+
+  const clearErrorModal = () => {
+    setErrorModalDisplay('');
+    setErrorDebugDetails(undefined);
   };
 
   const getCache = (name: string) => {
@@ -60,14 +78,13 @@ export const MainContainer = () => {
   };
 
   const getNetworks = () => {
-    fetch('/api/networks')
-      .then((res) => {
-        // Fetch API does not catch 400 status codes
-        if (!res.ok) {
-          throw new Error('Docker Unresponsive');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<IState['networks']>(
+      '/api/networks',
+      {
+        method: 'GET',
+      },
+      'get-networks'
+    )
       .then((networks) => {
         setDockerUnresponsiveModalDisplay(false);
         // cache network data in cookie
@@ -78,7 +95,8 @@ export const MainContainer = () => {
           setNetworks(networks);
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        debugLog('failed to refresh network data', getDebugErrorDetails(error));
         // Open error modal if docker unresponsive
         setDockerUnresponsiveModalDisplay(true);
       });
@@ -113,7 +131,7 @@ export const MainContainer = () => {
             networks={networks}
             toggleDeleteNetworkModal={toggleDeleteNetworkModal}
             setNetworkToBeDeleted={setNetworkToBeDeleted}
-            setErrorModalDisplay={setErrorModalDisplay}
+            setErrorModalDisplay={showErrorModal}
           />
         ) : null}
 
@@ -124,7 +142,7 @@ export const MainContainer = () => {
             <MainDisplay
               networks={networks}
               setNetworks={setNetworks}
-              setErrorModalDisplay={setErrorModalDisplay}
+              setErrorModalDisplay={showErrorModal}
             />
           </Route>
           {/* default route */}
@@ -138,13 +156,15 @@ export const MainContainer = () => {
             networkToDelete={networkToDelete}
             setNetworks={setNetworks}
             networks={networks}
-            setErrorModalDisplay={setErrorModalDisplay}
+            setErrorModalDisplay={showErrorModal}
           />
         ) : null}
         {errorModalDisplay ? (
           <ErrorModal
-            setErrorModalDisplay={setErrorModalDisplay}
+            setErrorModalDisplay={clearErrorModal}
             error={errorModalDisplay}
+            debugDetails={errorDebugDetails}
+            debugEnabled={isDebugModeEnabled()}
           />
         ) : null}
         {dockerUnresponsiveModalDisplay ? <DockerUnresponsive /> : null}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AddNetworkMenu } from './AddNetworkMenu';
+import { DebugErrorDetails } from '../utils/debugMode';
 import './sideNav.scss';
 
 // array of network objects
@@ -11,7 +12,10 @@ interface IProps {
   setNetworks: (networks: []) => void;
   toggleDeleteNetworkModal: () => void;
   setNetworkToBeDeleted: (networkName: string) => void;
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 export const SideNav: React.FC<IProps> = ({

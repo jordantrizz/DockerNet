@@ -5,6 +5,7 @@ import { ListDisplay } from './ListDisplay';
 import { ContainerToolBar } from './ContainerToolBar';
 import { GraphDisplay } from './GraphDisplay';
 import { ConnectContainerModal } from './ConnectContainerModal';
+import { DebugErrorDetails } from '../utils/debugMode';
 
 //array of network objects
 interface IProps {
@@ -14,7 +15,10 @@ interface IProps {
     containers: [];
   }[];
   setNetworks: (networks: []) => void;
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 // array of container objects

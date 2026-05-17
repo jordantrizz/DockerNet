@@ -136,6 +136,27 @@
 >- API mode still failing on socket/path issues:
 >  - Set `DOCKER_API_FALLBACK_MODE=cli` to retry network discovery through Docker CLI automatically.
 >
+>### Frontend Debug Mode (Data Gathering)
+>Use debug mode when UI data is missing and you need request-level diagnostics.
+>
+>- Debug mode is available in all environments and is off by default.
+>- Enable debug mode from browser DevTools Console:
+>  - `localStorage.setItem('dockernet-debug', '1')`
+>  - Refresh the page.
+>- Disable debug mode:
+>  - `localStorage.removeItem('dockernet-debug')`
+>  - Refresh the page.
+>
+>When enabled:
+>- Frontend requests include `x-dockernet-debug: 1`.
+>- Error modals include debug details for failed data requests:
+>  - operation name
+>  - request method + URL
+>  - HTTP status
+>  - server error message (when available)
+>  - timestamp
+>- Browser console logs request success/failure debug events under `[DockerNet][debug]`.
+>
 >### Startup Health Check Logs
 >On server boot, DockerNet emits a one-time startup health log. Use it to diagnose Docker connectivity without calling API endpoints manually.
 >

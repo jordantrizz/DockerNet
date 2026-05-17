@@ -1,10 +1,15 @@
 /* eslint-disable jsx-a11y/no-onchange */
 import { useState } from 'react';
 import './addNetworkMenu.scss';
+import { DebugErrorDetails } from '../utils/debugMode';
+import { fetchJsonWithDebug, getDebugErrorDetails } from '../utils/fetchWithDebug';
 
 interface IProps {
   setNetworks: (networks: []) => void;
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 export const AddNetworkMenu: React.FC<IProps> = ({
@@ -30,25 +35,23 @@ export const AddNetworkMenu: React.FC<IProps> = ({
     setDriverTypeInput('');
     toggleAddNetworkModalDisplay();
 
-    fetch('/api/networks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'Application/JSON' },
-      body: JSON.stringify({
-        networkName: networkNameInput,
-        driver: driverTypeInput,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failure to create network');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<[]>(
+      '/api/networks',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'Application/JSON' },
+        body: JSON.stringify({
+          networkName: networkNameInput,
+          driver: driverTypeInput,
+        }),
+      },
+      'create-network'
+    )
       .then((networks) => {
         setNetworks(networks);
       })
-      .catch(() => {
-        setErrorModalDisplay('create-network-error');
+      .catch((error) => {
+        setErrorModalDisplay('create-network-error', getDebugErrorDetails(error));
       });
   };
 

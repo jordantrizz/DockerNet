@@ -1,5 +1,7 @@
 import React from 'react';
 import './listDisplay.scss';
+import { DebugErrorDetails } from '../utils/debugMode';
+import { fetchJsonWithDebug, getDebugErrorDetails } from '../utils/fetchWithDebug';
 
 interface IProps {
   containers: {
@@ -12,7 +14,10 @@ interface IProps {
     name: string;
   };
   setNetworks: (networks: []) => void;
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 export const ListDisplay: React.FC<IProps> = ({
@@ -22,25 +27,26 @@ export const ListDisplay: React.FC<IProps> = ({
   setErrorModalDisplay,
 }) => {
   const disconnectContainer = (networkName: string, containerName: string) => {
-    fetch('/api/containers', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'Application/JSON' },
-      body: JSON.stringify({
-        networkName: networkName,
-        containerName: containerName,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failure to disconnect container');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<[]>(
+      '/api/containers',
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'Application/JSON' },
+        body: JSON.stringify({
+          networkName: networkName,
+          containerName: containerName,
+        }),
+      },
+      'disconnect-container'
+    )
       .then((networks) => {
         setNetworks(networks);
       })
-      .catch(() => {
-        setErrorModalDisplay('disconnect-container-error');
+      .catch((error) => {
+        setErrorModalDisplay(
+          'disconnect-container-error',
+          getDebugErrorDetails(error)
+        );
       });
   };
 

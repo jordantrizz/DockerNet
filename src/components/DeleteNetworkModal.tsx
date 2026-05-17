@@ -1,4 +1,6 @@
 import './modal.scss';
+import { DebugErrorDetails } from '../utils/debugMode';
+import { fetchJsonWithDebug, getDebugErrorDetails } from '../utils/fetchWithDebug';
 
 interface IProps {
   toggleDeleteNetworkModal: () => void;
@@ -9,7 +11,10 @@ interface IProps {
     name: string;
     containers: [];
   }[];
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 export const DeleteNetworkModal: React.FC<IProps> = ({
@@ -25,22 +30,20 @@ export const DeleteNetworkModal: React.FC<IProps> = ({
   );
 
   const deleteNetwork = (networkName: string) => {
-    fetch(`/api/networks/?networkName=${networkName}`, {
-      method: 'DELETE',
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('failure to delete network');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<[]>(
+      `/api/networks/?networkName=${networkName}`,
+      {
+        method: 'DELETE',
+      },
+      'delete-network'
+    )
       .then((networks) => {
         setNetworks(networks);
         toggleDeleteNetworkModal();
       })
-      .catch(() => {
+      .catch((error) => {
         toggleDeleteNetworkModal();
-        setErrorModalDisplay('remove-network-error');
+        setErrorModalDisplay('remove-network-error', getDebugErrorDetails(error));
       });
   };
 

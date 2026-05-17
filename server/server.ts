@@ -30,6 +30,32 @@ const dockerApiVersionOverride = process.env.DOCKER_API_VERSION || '';
 
 const shellEscapeArg = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
 
+const truthyValues = new Set(['1', 'true', 'on', 'yes']);
+
+const isTruthy = (value: unknown) => {
+  if (typeof value === 'string') return truthyValues.has(value.toLowerCase());
+  if (Array.isArray(value)) return value.some((item) => isTruthy(item));
+  return false;
+};
+
+const shouldIncludeDebugResponse = (req: Request) => {
+  const headerValue = req.header('x-dockernet-debug');
+  const queryValue = req.query.debug;
+
+  return isTruthy(headerValue) || isTruthy(queryValue);
+};
+
+const getErrorMessage = (message: unknown) => {
+  if (typeof message === 'string') return message;
+  if (message instanceof Error) return message.message;
+
+  try {
+    return JSON.stringify(message);
+  } catch (error) {
+    return 'error occurred';
+  }
+};
+
 const logDockerStartupHealth = async () => {
   const normalizedMode = dockerConnectionMode.toLowerCase();
 
@@ -92,6 +118,16 @@ app.use(express.json());
 
 app.use('/api', (req: Request, res: Response, next) => {
   const startedAt = Date.now();
+  const debugEnabled = shouldIncludeDebugResponse(req);
+
+  if (debugEnabled) {
+    console.log('[DockerNet][api][debug] request start', {
+      method: req.method,
+      path: req.originalUrl,
+      hasBody: Boolean(req.body && Object.keys(req.body).length),
+      query: req.query,
+    });
+  }
 
   res.on('finish', () => {
     const elapsedMs = Date.now() - startedAt;
@@ -132,18 +168,48 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   };
   const errorObj = {
     ...defaultErr,
-    log: err.log,
-    message: { err: err.message },
+    status: typeof err.status === 'number' ? err.status : defaultErr.status,
+    log: err.log || defaultErr.log,
+    message: {
+      err: getErrorMessage(err.message || defaultErr.message.err),
+    },
   };
+
+  const includeDebugResponse = shouldIncludeDebugResponse(req);
 
   console.error('[DockerNet][error]', {
     method: req.method,
     path: req.originalUrl,
+    status: errorObj.status,
     log: errorObj.log,
     message: errorObj.message.err,
+    debugRequest: includeDebugResponse,
   });
 
-  return res.status(errorObj.status).json(errorObj.message);
+  const responseBody: {
+    err: string;
+    debug?: {
+      method: string;
+      path: string;
+      status: number;
+      log: string;
+      timestamp: string;
+    };
+  } = {
+    err: errorObj.message.err,
+  };
+
+  if (includeDebugResponse) {
+    responseBody.debug = {
+      method: req.method,
+      path: req.originalUrl,
+      status: errorObj.status,
+      log: errorObj.log,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  return res.status(errorObj.status).json(responseBody);
 };
 
 app.use(errorHandler);

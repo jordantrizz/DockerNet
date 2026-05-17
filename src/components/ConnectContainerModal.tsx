@@ -1,6 +1,8 @@
 /* eslint-disable jsx-a11y/no-onchange */
 import './modal.scss';
 import { useState, useEffect } from 'react';
+import { DebugErrorDetails } from '../utils/debugMode';
+import { fetchJsonWithDebug, getDebugErrorDetails } from '../utils/fetchWithDebug';
 
 interface IProps {
   networkName: string | undefined;
@@ -11,7 +13,10 @@ interface IProps {
     ipAddress: string;
   }[];
   setNetworks: (networks: []) => void;
-  setErrorModalDisplay: (error: string) => void;
+  setErrorModalDisplay: (
+    error: string,
+    debugDetails?: DebugErrorDetails
+  ) => void;
 }
 
 interface IState {
@@ -42,44 +47,48 @@ export const ConnectContainerModal: React.FC<IProps> = ({
     containerName: string
   ) => {
     if (!networkName || !containerName) return;
-    fetch('/api/containers', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'Application/JSON' },
-      body: JSON.stringify({
-        networkName: networkName,
-        containerName: containerName,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Error connecting container');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<[]>(
+      '/api/containers',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'Application/JSON' },
+        body: JSON.stringify({
+          networkName: networkName,
+          containerName: containerName,
+        }),
+      },
+      'connect-container'
+    )
       .then((networks) => {
         toggleConnectContainerModal();
         setNetworks(networks);
       })
-      .catch(() => {
+      .catch((error) => {
         toggleConnectContainerModal();
-        setErrorModalDisplay('connect-container-error');
+        setErrorModalDisplay(
+          'connect-container-error',
+          getDebugErrorDetails(error)
+        );
       });
   };
 
   const getRunningContainers = () => {
-    fetch('/api/containers')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failure to get running containers');
-        }
-        return res.json();
-      })
+    fetchJsonWithDebug<IState['runningContainers']>(
+      '/api/containers',
+      {
+        method: 'GET',
+      },
+      'get-running-containers'
+    )
       .then((containers) => {
         setRunningContainers(containers);
       })
-      .catch(() => {
+      .catch((error) => {
         toggleConnectContainerModal();
-        setErrorModalDisplay('get-running-containers-error');
+        setErrorModalDisplay(
+          'get-running-containers-error',
+          getDebugErrorDetails(error)
+        );
       });
   };
 
