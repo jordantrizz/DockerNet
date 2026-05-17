@@ -95,6 +95,8 @@
 
 >### Requirements
 >1. Latest version of [Docker][docker]
+>1. Docker daemon must be running on the host where DockerNet server runs
+>1. Docker socket must be accessible to the server process
 >### Installation
 >1. Clone Repo to local device - `git clone https://github.com/oslabs-beta/DockerNet.git`
 >1. Navigate to the DockerNet directory in terminal of chioce
@@ -104,11 +106,43 @@
 >_*Note:*_ 
 >- Frontend and Server Ports are defaulted to 8081 and 3031, respectively 
 >- These can be updated in the `.env` file found in the root directory
+>
+>### Docker Connectivity Configuration
+>DockerNet supports Docker API over Unix socket by default and can be configured through `.env`:
+>
+>- `DOCKER_CONNECTION_MODE=api|cli`
+>  - `api` (default): use Docker API over Unix socket
+>  - `cli`: bypass socket/API and use Docker CLI for network discovery
+>- `DOCKER_API_FALLBACK_MODE=none|cli`
+>  - `none` (default): fail request when API/socket path is unavailable
+>  - `cli`: if API/socket fails, retry network discovery through Docker CLI
+>- `DOCKER_SOCKET_PATH=/var/run/docker.sock`
+>  - Path to Docker Unix socket for API mode
+>  - Set this when your Docker host uses a non-default socket path
+>- `DOCKER_API_VERSION=`
+>  - Optional override for API mode
+>  - If blank, DockerNet auto-detects API version using `GET /version`
+>
+>Linux default socket:
+>- `/var/run/docker.sock`
+>
+>If DockerNet runs as a non-root user on Linux, that user must have permission to access the Docker socket (for example, via docker group membership).
 >### How to Use
 >1. On your local device open Docker and ensure you have containers running
 >1. Navigate to the DockerNet directory in terminal of chioce
 >1. Start app using using the following command - `npm start`
 >1. Wait for app to load in your default browser
+>
+>### Troubleshooting Docker Connectivity
+>- Error similar to `client version 1.18 is too old... minimum supported API version is ...`:
+>  - DockerNet now auto-detects API version from Docker `/version` when `DOCKER_API_VERSION` is not set.
+>  - If you set `DOCKER_API_VERSION`, ensure it is supported by your Docker daemon.
+>- Docker unresponsive in UI:
+>  - Confirm Docker daemon is running on the same host as DockerNet server.
+>  - Confirm `DOCKER_SOCKET_PATH` exists and is readable by the server process.
+>  - If your environment does not expose a socket path, set `DOCKER_CONNECTION_MODE=cli`.
+>- API mode still failing on socket/path issues:
+>  - Set `DOCKER_API_FALLBACK_MODE=cli` to retry network discovery through Docker CLI automatically.
 >### Demo
 >Create Network
 > <p align="center"><img alt="create-network" src="./assets/create-network.gif"></p>
